@@ -1,6 +1,7 @@
 {
-  "name": "@0224/data-source-firebase",
+  "name": "@ozza/data-source-firebase",
   "version": "0.0.0",
+  "private": false,
   "description": "Firebase data source plugin for 0224",
   "type": "module",
   "files": [

@@ -1,17 +1,17 @@
-import React from 'react';
+import React from "react";
 import {
   FirebaseOptions,
   initializeApp,
-  getApp,
   FirebaseApp,
-} from 'firebase/app';
+  getApp
+} from "firebase/app";
 import {
   collection,
   doc,
   getDoc,
   getDocs,
-  getFirestore,
-} from 'firebase/firestore';
+  getFirestore
+} from "firebase/firestore";
 
 export interface DataSource<T> {
   data: T | undefined;
@@ -21,9 +21,9 @@ export interface DataSource<T> {
   fetchMore: (offset: number, size: number) => void;
 }
 
-enum DataSourceType {
+export enum DataSourceType {
   DataCell,
-  DataList,
+  DataList
 }
 
 interface DataSourceConfigFirestore {
@@ -41,23 +41,27 @@ export interface PluginOptions {
 }
 
 export function useDataSource<T = unknown>(
-  options: PluginOptions,
+  options: PluginOptions
 ): DataSource<T> {
-  const app = React.useRef<FirebaseApp>();
-  React.useEffect(() => {
-    try {
-      app.current = getApp(options.firebaseName);
-    } catch {
-      app.current = initializeApp(
-        options.firebaseOptions,
-        options.firebaseName,
-      );
-    }
-  }, []);
-  const firestore = React.useRef(getFirestore(app.current));
-  const [data, setData] = React.useState<DataSource<T>['data']>();
-  const [error, setError] = React.useState<DataSource<T>['error']>();
-  const [loading, setLoading] = React.useState<DataSource<T>['loading']>(false);
+  const app = React.useRef<FirebaseApp>(
+    initializeApp(options.firebaseOptions, options.firebaseName)
+  );
+  // if (app.current === undefined) {
+  //   try {
+  //     app.current = getApp(options.firebaseName);
+  //   } catch (error) {
+  //     app.current = initializeApp(
+  //       options.firebaseOptions,
+  //       options.firebaseName
+  //     );
+  //   }
+  // }
+  // console.log(app.current);
+  // console.log(getFirestore(app.current));
+  const firestore = React.useRef(getFirestore(app.current!));
+  const [data, setData] = React.useState<DataSource<T>["data"]>();
+  const [error, setError] = React.useState<DataSource<T>["error"]>();
+  const [loading, setLoading] = React.useState<DataSource<T>["loading"]>(false);
 
   const fetch = React.useCallback(() => {
     setLoading(true);
@@ -68,11 +72,11 @@ export function useDataSource<T = unknown>(
         getDoc(doc(firestore.current, ref))
           .catch((error) => {
             console.error(error);
-            throw new Error('[data-source-firebase] error getting document');
+            throw new Error("[data-source-firebase] error getting document");
           })
           .then((snapshot) => {
-            if (snapshot.exists) {
-              setData(snapshot.data() as T);
+            if (snapshot.exists()) {
+              setData({ ...snapshot.data(), id: snapshot.id } as T);
             } else {
               throw new Error("[data-source-firebase] document doesn't exist");
             }
@@ -89,10 +93,15 @@ export function useDataSource<T = unknown>(
         getDocs(collection(firestore.current, ref))
           .catch((error) => {
             console.error(error);
-            throw new Error('[data-source-firebase] error getting collection');
+            throw new Error("[data-source-firebase] error getting collection");
           })
           .then((snapshot) => {
-            setData(snapshot.docs.map((doc) => doc.data()) as T);
+            setData(
+              snapshot.docs.map((doc) => ({
+                ...doc.data(),
+                id: doc.id
+              })) as T
+            );
           })
           .catch((error: Error) => {
             setError(error);
@@ -115,6 +124,6 @@ export function useDataSource<T = unknown>(
     refresh: fetch,
     fetchMore: () => {
       return [];
-    },
+    }
   };
 }
